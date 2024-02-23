@@ -1,13 +1,14 @@
 import puppeteer from "puppeteer";
+import fs from "fs";
 
 const openWebPage = async () => {
     const browser = await puppeteer.launch({
         headless: false
     });
     const page = await browser.newPage();
-    
+
     await page.goto("https://www.wxample.com");
-    
+
     await browser.close();
 }
 // openWebPage();
@@ -64,16 +65,21 @@ const getDataFromWebScrape = async () => {
 
     await page.goto("https://quotes.toscrape.com");
     const result = await page.evaluate(() => {
-        const quote = document.querySelector("span.text").innerText;
-        const author = document.querySelector("small.author").innerText;
-        let ar = []
-        document.querySelector("a.tag").forEach(e => {
-            ar.push(e.innerText)
+        const quotes = document.querySelectorAll(".quote");
+        const data = [...quotes].map(quote => {
+            const text = quote.querySelector("span.text").innerText;
+            const author = quote.querySelector("small.author").innerText;
+            const tags = [...quote.querySelectorAll("a.tag")].map(tag => tag.innerText);
+            return { "text": text, "author": author, "tags": tags };
         })
-        return { quote, author , ar };
+
+        return data;
     })
     console.log('result', result)
-
+    fs.writeFile("quotes.json", JSON.stringify(result, null, 2), (err) => {
+        if (err) throw err;
+        console.log('Data has been written to file');
+    })
     await browser.close();
 }
 getDataFromWebScrape();
